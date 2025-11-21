@@ -307,6 +307,18 @@ function renderPreview() {
   });
 }
 
+// Drawing state
+let drawMode = "none";
+let isDrawing = false;
+let drawStart = { x: 0, y: 0 };
+let currentDrawnShape = null;
+
+// Get current draw mode
+function getDrawMode() {
+  const checked = document.querySelector('input[name="drawMode"]:checked');
+  return checked ? checked.value : "none";
+}
+
 // Handle canvas hover to apply cursor
 if (previewCanvas) {
   previewCanvas.addEventListener("mousemove", (e) => {
@@ -314,17 +326,151 @@ if (previewCanvas) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Find which shape the mouse is over
-    let cursorToApply = "default";
-    for (const shape of shapes) {
-      if (isPointInShape(x, y, shape)) {
-        cursorToApply = getCursorForShape(shape);
-        break;
+    drawMode = getDrawMode();
+
+    if (isDrawing && drawMode !== "none") {
+      // Draw temporary shape
+      currentDrawnShape = createShapeFromDrag(drawStart.x, drawStart.y, x, y, drawMode);
+      renderPreview();
+      drawTemporaryShape(currentDrawnShape);
+    } else {
+      // Find which shape the mouse is over
+      let cursorToApply = "default";
+      for (const shape of shapes) {
+        if (isPointInShape(x, y, shape)) {
+          cursorToApply = getCursorForShape(shape);
+          break;
+        }
       }
+      previewCanvas.style.cursor = cursorToApply;
+    }
+  });
+
+  previewCanvas.addEventListener("mousedown", (e) => {
+    drawMode = getDrawMode();
+    if (drawMode === "none") return;
+
+    const rect = previewCanvas.getBoundingClientRect();
+    drawStart.x = Math.round(e.clientX - rect.left);
+    drawStart.y = Math.round(e.clientY - rect.top);
+    isDrawing = true;
+  });
+
+  previewCanvas.addEventListener("mouseup", (e) => {
+    if (!isDrawing) return;
+
+    const rect = previewCanvas.getBoundingClientRect();
+    const endX = Math.round(e.clientX - rect.left);
+    const endY = Math.round(e.clientY - rect.top);
+
+    if (currentDrawnShape) {
+      displayGeneratedJson(currentDrawnShape);
     }
 
-    previewCanvas.style.cursor = cursorToApply;
+    isDrawing = false;
+    currentDrawnShape = null;
+    renderPreview();
   });
+
+  previewCanvas.addEventListener("mouseleave", () => {
+    if (isDrawing) {
+      isDrawing = false;
+      currentDrawnShape = null;
+      renderPreview();
+    }
+  });
+}
+
+// Create shape object from drag coordinates
+function createShapeFromDrag(x1, y1, x2, y2, type) {
+  const shape = { cursor: "pointer" };
+
+  if (type === "rectangle") {
+    shape.type = "rectangle";
+    shape.x = Math.min(x1, x2);
+    shape.y = Math.min(y1, y2);
+    shape.width = Math.abs(x2 - x1);
+    shape.height = Math.abs(y2 - y1);
+  } else if (type === "circle") {
+    shape.type = "circle";
+    shape.x = x1;
+    shape.y = y1;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    shape.radius = Math.round(Math.sqrt(dx * dx + dy * dy));
+  } else if (type === "line") {
+    shape.type = "line";
+    shape.x1 = x1;
+    shape.y1 = y1;
+    shape.x2 = x2;
+    shape.y2 = y2;
+  }
+
+  return shape;
+}
+
+// Draw temporary shape on canvas
+function drawTemporaryShape(shape) {
+  if (!shape || !previewCanvas) return;
+
+  const ctx = previewCanvas.getContext("2d");
+  ctx.strokeStyle = "#00ff00";
+  ctx.lineWidth = 3;
+  ctx.fillStyle = "rgba(0, 255, 0, 0.1)";
+  ctx.setLineDash([5, 5]);
+
+  if (shape.type === "rectangle") {
+    ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
+    ctx.fillRect(shape.x, shape.y, shape.width, shape.height);
+  } else if (shape.type === "circle") {
+    ctx.beginPath();
+    ctx.arc(shape.x, shape.y, shape.radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fill();
+  } else if (shape.type === "line") {
+    ctx.beginPath();
+    ctx.moveTo(shape.x1, shape.y1);
+    ctx.lineTo(shape.x2, shape.y2);
+    ctx.stroke();
+  }
+
+  ctx.setLineDash([]);
+}
+
+// Display generated JSON
+function displayGeneratedJson(shape) {
+  const output = document.getElementById("generatedJson");
+  if (output) {
+    output.value = JSON.stringify(shape, null, 2);
+  }
+}
+
+// Copy generated JSON to clipboard
+function copyGeneratedJson() {
+  const output = document.getElementById("generatedJson");
+  if (output && output.value) {
+    navigator.clipboard.writeText(output.value).then(() => {
+      alert("JSON copied to clipboard!");
+    }).catch(err => {
+      console.error("Failed to copy:", err);
+    });
+  }
+}
+
+// Add generated JSON to editor
+function addGeneratedToEditor() {
+  const output = document.getElementById("generatedJson");
+  if (!output || !output.value || !shapeJsonEditor) return;
+
+  try {
+    const newShape = JSON.parse(output.value);
+    const currentShapes = JSON.parse(shapeJsonEditor.value);
+    currentShapes.push(newShape);
+    shapeJsonEditor.value = JSON.stringify(currentShapes, null, 2);
+    alert("Shape added to editor! Click 'Apply Shapes' to render.");
+  } catch (e) {
+    alert("Error adding shape: " + e.message);
+  }
 }
 
 // Check if point is in shape

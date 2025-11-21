@@ -65,3 +65,12 @@
     color: #6c757d;
     font-size: 0.875rem;
 }
+
+#generatedJson {
+    font-size: 0.875rem;
+    background-color: #f8f9fa;
+}
+
+.btn-group label {
+    cursor: pointer;
+}

@@ -75,3 +75,8 @@ pre {
     background-color: #2b2b2b !important;
     color: #e0e0e0;
 }
+
+#generatedJson {
+    background-color: #2b2b2b !important;
+    color: white !important;
+}
