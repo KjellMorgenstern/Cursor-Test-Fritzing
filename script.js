@@ -334,6 +334,79 @@ function renderPreview() {
   shapes.forEach((shape, index) => {
     // Highlight active shape in blue
     const isActive = index === activeShapeIndex;
+
+    // Draw aura effect for active shape with gradient glow
+    if (isActive) {
+      const gap = 10;
+      const auraWidth = 40;
+
+      if (shape.shape === "rectangle") {
+        // Draw multiple layers for gradient effect
+        const steps = 10;
+        for (let i = steps; i > 0; i--) {
+          const progress = i / steps;
+          const currentGap = gap + (auraWidth * (1 - progress));
+          // Fade out near the shape (at gap distance) and at outer edge
+          const distanceFromGap = currentGap - gap;
+          const opacity = (0.5 * progress) * Math.sin((distanceFromGap / auraWidth) * Math.PI);
+
+          ctx.strokeStyle = `rgba(0, 120, 255, ${opacity})`;
+          ctx.lineWidth = 3;
+
+          const auraX = shape.x - currentGap;
+          const auraY = shape.y - currentGap;
+          const auraW = shape.width + 2 * currentGap;
+          const auraH = shape.height + 2 * currentGap;
+          ctx.strokeRect(auraX, auraY, auraW, auraH);
+        }
+      } else if (shape.shape === "circle") {
+        // Use radial gradient for smooth glow - starts transparent, peaks in middle, fades out
+        const gradient = ctx.createRadialGradient(
+          shape.x, shape.y, shape.radius + gap,
+          shape.x, shape.y, shape.radius + gap + auraWidth
+        );
+        gradient.addColorStop(0, "rgba(0, 120, 255, 0)");
+        gradient.addColorStop(0.3, "rgba(0, 120, 255, 0.5)");
+        gradient.addColorStop(0.7, "rgba(0, 120, 255, 0.3)");
+        gradient.addColorStop(1, "rgba(0, 120, 255, 0)");
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(shape.x, shape.y, shape.radius + gap + auraWidth, 0, 2 * Math.PI);
+        ctx.fill();
+      } else if (shape.shape === "line") {
+        // Calculate line properties
+        const dx = shape.x2 - shape.x1;
+        const dy = shape.y2 - shape.y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        // Calculate perpendicular offset for the glow rectangle
+        const totalGlowWidth = gap + auraWidth;
+
+        // Save context and transform to line coordinate system
+        ctx.save();
+        ctx.translate(shape.x1, shape.y1);
+        ctx.rotate(angle);
+
+        // Create gradient perpendicular to the line
+        const gradient = ctx.createLinearGradient(0, -totalGlowWidth, 0, totalGlowWidth);
+        gradient.addColorStop(0, "rgba(0, 120, 255, 0)"); // Outer edge - transparent
+        gradient.addColorStop(0.2, "rgba(0, 120, 255, 0.4)"); // Fade in
+        gradient.addColorStop(0.4, "rgba(0, 120, 255, 0.6)"); // Peak brightness
+        gradient.addColorStop(0.5, "rgba(0, 120, 255, 0)"); // Near line - transparent
+        gradient.addColorStop(0.6, "rgba(0, 120, 255, 0.6)"); // Peak brightness
+        gradient.addColorStop(0.8, "rgba(0, 120, 255, 0.4)"); // Fade out
+        gradient.addColorStop(1, "rgba(0, 120, 255, 0)"); // Outer edge - transparent
+
+        // Draw glow rectangle along the line
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, -totalGlowWidth, length, totalGlowWidth * 2);
+
+        ctx.restore();
+      }
+    }
+
     const strokeStyle = isActive ? "rgba(0, 120, 255, 1.0)" : `rgba(255, 0, 0, ${strokeOpacity})`;
     const fillStyle = isActive ? "rgba(0, 120, 255, 0.25)" : `rgba(255, 0, 0, ${shapeOpacity})`;
 
