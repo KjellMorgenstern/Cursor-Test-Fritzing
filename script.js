@@ -73,6 +73,7 @@ let currentCursorURL = null;
 // Cursor storage with generated names
 const cursorLibrary = new Map();
 let cursorCounter = 0;
+let lastUploadedCursor = null;
 
 // Generate cursor name from filename
 function generateCursorName(filename) {
@@ -95,6 +96,7 @@ cursorUploadInput.addEventListener("change", (event) => {
         filename: file.name,
         hotspot: { x: 0, y: 0 }
       });
+      lastUploadedCursor = cursorName;
       currentCursorURL = dataURL;
       applyCustomCursor(dataURL);
       updateCursorList();
@@ -284,11 +286,17 @@ function renderPreview() {
   // Draw background image
   ctx.drawImage(previewImage, 0, 0);
 
+  // Determine shape opacity based on mode
+  const currentDrawMode = getDrawMode();
+  const isInHoverMode = currentDrawMode === "none" && !jsonEditorHasFocus;
+  const shapeOpacity = isInHoverMode ? 0.02 : 0.15;
+  const strokeOpacity = isInHoverMode ? 0.3 : 1.0;
+
   // Draw shapes
   shapes.forEach(shape => {
-    ctx.strokeStyle = "#ff0000";
+    ctx.strokeStyle = `rgba(255, 0, 0, ${strokeOpacity})`;
     ctx.lineWidth = 2;
-    ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
+    ctx.fillStyle = `rgba(255, 0, 0, ${shapeOpacity})`;
 
     if (shape.type === "rectangle") {
       ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
@@ -312,11 +320,25 @@ let drawMode = "none";
 let isDrawing = false;
 let drawStart = { x: 0, y: 0 };
 let currentDrawnShape = null;
+let jsonEditorHasFocus = false;
 
 // Get current draw mode
 function getDrawMode() {
   const checked = document.querySelector('input[name="drawMode"]:checked');
   return checked ? checked.value : "none";
+}
+
+// Track JSON editor focus
+if (shapeJsonEditor) {
+  shapeJsonEditor.addEventListener("focus", () => {
+    jsonEditorHasFocus = true;
+    renderPreview();
+  });
+
+  shapeJsonEditor.addEventListener("blur", () => {
+    jsonEditorHasFocus = false;
+    renderPreview();
+  });
 }
 
 // Get canvas coordinates accounting for scale
@@ -391,7 +413,8 @@ if (previewCanvas) {
 
 // Create shape object from drag coordinates
 function createShapeFromDrag(x1, y1, x2, y2, type) {
-  const shape = { cursor: "pointer" };
+  // Use most recent uploaded cursor, or fallback to "pointer"
+  const shape = { cursor: lastUploadedCursor || "pointer" };
 
   if (type === "rectangle") {
     shape.type = "rectangle";
@@ -453,19 +476,7 @@ function displayGeneratedJson(shape) {
   }
 }
 
-// Copy generated JSON to clipboard
-function copyGeneratedJson() {
-  const output = document.getElementById("generatedJson");
-  if (output && output.value) {
-    navigator.clipboard.writeText(output.value).then(() => {
-      alert("JSON copied to clipboard!");
-    }).catch(err => {
-      console.error("Failed to copy:", err);
-    });
-  }
-}
-
-// Add generated JSON to editor
+// Add generated JSON to editor and apply
 function addGeneratedToEditor() {
   const output = document.getElementById("generatedJson");
   if (!output || !output.value || !shapeJsonEditor) return;
@@ -475,7 +486,8 @@ function addGeneratedToEditor() {
     const currentShapes = JSON.parse(shapeJsonEditor.value);
     currentShapes.push(newShape);
     shapeJsonEditor.value = JSON.stringify(currentShapes, null, 2);
-    alert("Shape added to editor! Click 'Apply Shapes' to render.");
+    // Automatically apply the shapes
+    updateShapesFromJSON();
   } catch (e) {
     alert("Error adding shape: " + e.message);
   }
