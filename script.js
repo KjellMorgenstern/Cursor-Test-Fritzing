@@ -43,10 +43,46 @@ cursorTypes.forEach((item) => {
   const cursorTestDiv = document.createElement("div");
   cursorTestDiv.innerText = item.cursor;
   cursorTestDiv.style.cursor = item.cursor;
-  cursorTestDiv.id = "cursorDiv";
+  cursorTestDiv.className = "cursorDiv";
 
   div.appendChild(cursorTestDiv);
 });
+
+// Function to update cursor test area with uploaded and built-in cursors
+function updateCursorTestArea() {
+  const div = document.getElementById("content");
+  if (!div) return;
+
+  // Remove old custom cursor divs and separator
+  const oldCustomDivs = div.querySelectorAll('.custom-cursor-div');
+  oldCustomDivs.forEach(d => d.remove());
+  const oldSeparator = div.querySelector('.cursor-separator');
+  if (oldSeparator) oldSeparator.remove();
+
+  // Add separator
+  const separator = document.createElement("div");
+  separator.className = "cursor-separator custom-cursor-div";
+  separator.innerHTML = "<h5>Custom Cursors</h5>";
+  div.appendChild(separator);
+
+  // Add built-in cursors from cursors directory
+  Object.keys(cursorFileMap).forEach(cursorName => {
+    const cursorTestDiv = document.createElement("div");
+    cursorTestDiv.innerText = cursorName;
+    cursorTestDiv.style.cursor = `url('${cursorFileMap[cursorName]}') 0 0, auto`;
+    cursorTestDiv.className = "cursorDiv custom-cursor-div";
+    div.appendChild(cursorTestDiv);
+  });
+
+  // Add uploaded cursors
+  cursorLibrary.forEach((cursor, name) => {
+    const cursorTestDiv = document.createElement("div");
+    cursorTestDiv.innerText = name;
+    cursorTestDiv.style.cursor = `url('${cursor.url}') ${cursor.hotspot.x} ${cursor.hotspot.y}, auto`;
+    cursorTestDiv.className = "cursorDiv custom-cursor-div";
+    div.appendChild(cursorTestDiv);
+  });
+}
 
 
 function togglemode() {
@@ -148,6 +184,8 @@ function updateCursorList() {
       listElement.appendChild(item);
     });
   }
+  // Also update the test area
+  updateCursorTestArea();
 }
 
 // Save cursors to localStorage
@@ -874,6 +912,9 @@ function initializeApp() {
       loadDefaultImage();
     }
   }
+
+  // Initialize cursor test area with built-in cursors
+  updateCursorTestArea();
 }
 
 // Run initialization when DOM is ready

@@ -7,7 +7,7 @@ body{
     /* padding: 5px; */
 }
 
-#cursorDiv{
+.cursorDiv{
     height: 50px;
     width: 150px;
     background-color: white;
