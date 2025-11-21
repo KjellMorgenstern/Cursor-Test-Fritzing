@@ -293,10 +293,15 @@ function renderPreview() {
   const strokeOpacity = isInHoverMode ? 0.3 : 1.0;
 
   // Draw shapes
-  shapes.forEach(shape => {
-    ctx.strokeStyle = `rgba(255, 0, 0, ${strokeOpacity})`;
-    ctx.lineWidth = 2;
-    ctx.fillStyle = `rgba(255, 0, 0, ${shapeOpacity})`;
+  shapes.forEach((shape, index) => {
+    // Highlight active shape in blue
+    const isActive = index === activeShapeIndex;
+    const strokeStyle = isActive ? "rgba(0, 120, 255, 1.0)" : `rgba(255, 0, 0, ${strokeOpacity})`;
+    const fillStyle = isActive ? "rgba(0, 120, 255, 0.25)" : `rgba(255, 0, 0, ${shapeOpacity})`;
+
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = isActive ? 3 : 2;
+    ctx.fillStyle = fillStyle;
 
     if (shape.type === "rectangle") {
       ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
@@ -321,6 +326,7 @@ let isDrawing = false;
 let drawStart = { x: 0, y: 0 };
 let currentDrawnShape = null;
 let jsonEditorHasFocus = false;
+let activeShapeIndex = -1;
 
 // Get current draw mode
 function getDrawMode() {
@@ -328,7 +334,7 @@ function getDrawMode() {
   return checked ? checked.value : "none";
 }
 
-// Track JSON editor focus
+// Track JSON editor focus and cursor position
 if (shapeJsonEditor) {
   shapeJsonEditor.addEventListener("focus", () => {
     jsonEditorHasFocus = true;
@@ -337,8 +343,58 @@ if (shapeJsonEditor) {
 
   shapeJsonEditor.addEventListener("blur", () => {
     jsonEditorHasFocus = false;
+    activeShapeIndex = -1;
     renderPreview();
   });
+
+  // Track cursor position to highlight corresponding shape
+  shapeJsonEditor.addEventListener("click", updateActiveShapeFromCursor);
+  shapeJsonEditor.addEventListener("keyup", updateActiveShapeFromCursor);
+}
+
+// Determine which shape the cursor is on in the JSON editor
+function updateActiveShapeFromCursor() {
+  if (!shapeJsonEditor) return;
+
+  try {
+    const cursorPos = shapeJsonEditor.selectionStart;
+    const jsonText = shapeJsonEditor.value;
+    const shapes = JSON.parse(jsonText);
+
+    // Find which shape object contains the cursor position
+    let currentPos = 0;
+    let foundIndex = -1;
+
+    // Parse through the JSON structure to find cursor position
+    const arrayMatch = jsonText.match(/^\s*\[/);
+    if (!arrayMatch) return;
+
+    currentPos = arrayMatch[0].length;
+
+    for (let i = 0; i < shapes.length; i++) {
+      const shapeText = JSON.stringify(shapes[i], null, 2);
+      const shapeStart = currentPos;
+      const shapeEnd = currentPos + shapeText.length;
+
+      if (cursorPos >= shapeStart && cursorPos <= shapeEnd) {
+        foundIndex = i;
+        break;
+      }
+
+      currentPos = shapeEnd + 1; // +1 for comma
+      // Skip whitespace
+      while (currentPos < jsonText.length && /[\s,]/.test(jsonText[currentPos])) {
+        currentPos++;
+      }
+    }
+
+    if (activeShapeIndex !== foundIndex) {
+      activeShapeIndex = foundIndex;
+      renderPreview();
+    }
+  } catch (e) {
+    // Invalid JSON, ignore
+  }
 }
 
 // Get canvas coordinates accounting for scale
@@ -377,6 +433,24 @@ if (previewCanvas) {
         }
       }
       previewCanvas.style.cursor = cursorToApply;
+    }
+  });
+
+  // Click on canvas to select shape in JSON editor
+  previewCanvas.addEventListener("click", (e) => {
+    drawMode = getDrawMode();
+    if (drawMode !== "none" || isDrawing) return;
+
+    const coords = getCanvasCoordinates(e);
+    const x = coords.x;
+    const y = coords.y;
+
+    // Find which shape was clicked
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      if (isPointInShape(x, y, shapes[i])) {
+        highlightShapeInEditor(i);
+        break;
+      }
     }
   });
 
@@ -445,9 +519,9 @@ function drawTemporaryShape(shape) {
   if (!shape || !previewCanvas) return;
 
   const ctx = previewCanvas.getContext("2d");
-  ctx.strokeStyle = "#00ff00";
+  ctx.strokeStyle = "#0078ff";
   ctx.lineWidth = 3;
-  ctx.fillStyle = "rgba(0, 255, 0, 0.1)";
+  ctx.fillStyle = "rgba(0, 120, 255, 0.1)";
   ctx.setLineDash([5, 5]);
 
   if (shape.type === "rectangle") {
@@ -490,6 +564,44 @@ function addGeneratedToEditor() {
     updateShapesFromJSON();
   } catch (e) {
     alert("Error adding shape: " + e.message);
+  }
+}
+
+// Highlight a shape in the JSON editor
+function highlightShapeInEditor(shapeIndex) {
+  if (!shapeJsonEditor || shapeIndex < 0 || shapeIndex >= shapes.length) return;
+
+  try {
+    const jsonText = shapeJsonEditor.value;
+    const parsedShapes = JSON.parse(jsonText);
+
+    // Find the position of this shape in the text
+    let currentPos = 0;
+    const arrayMatch = jsonText.match(/^\s*\[/);
+    if (!arrayMatch) return;
+
+    currentPos = arrayMatch[0].length;
+
+    for (let i = 0; i < parsedShapes.length; i++) {
+      const shapeText = JSON.stringify(parsedShapes[i], null, 2);
+
+      if (i === shapeIndex) {
+        // Select this shape's text
+        shapeJsonEditor.focus();
+        shapeJsonEditor.setSelectionRange(currentPos, currentPos + shapeText.length);
+        activeShapeIndex = shapeIndex;
+        renderPreview();
+        return;
+      }
+
+      currentPos += shapeText.length + 1; // +1 for comma
+      // Skip whitespace
+      while (currentPos < jsonText.length && /[\s,]/.test(jsonText[currentPos])) {
+        currentPos++;
+      }
+    }
+  } catch (e) {
+    console.error("Error highlighting shape:", e);
   }
 }
 
@@ -557,19 +669,155 @@ function getCursorForShape(shape) {
 if (shapeJsonEditor) {
   shapeJsonEditor.value = JSON.stringify([
     {
+      "cursor": "pointer",
       "type": "rectangle",
-      "x": 50,
-      "y": 50,
-      "width": 100,
-      "height": 80,
-      "cursor": "pointer"
+      "x": 327,
+      "y": 253,
+      "width": 99,
+      "height": 112
     },
     {
+      "cursor": "new_bendpoint_km2_1",
+      "type": "line",
+      "x1": 388,
+      "y1": 89,
+      "x2": 380,
+      "y2": 241
+    },
+    {
+      "cursor": "pointer",
       "type": "circle",
-      "x": 250,
-      "y": 100,
-      "radius": 50,
-      "cursor": "crosshair"
+      "x": 322,
+      "y": 247,
+      "radius": 6
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 546,
+      "y": 84,
+      "radius": 6
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 675,
+      "y": 51,
+      "radius": 5
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 819,
+      "y": 147,
+      "radius": 31
+    },
+    {
+      "cursor": "pointer",
+      "type": "line",
+      "x1": 550,
+      "y1": 71,
+      "x2": 613,
+      "y2": 69
+    },
+    {
+      "cursor": "pointer",
+      "type": "line",
+      "x1": 618,
+      "y1": 71,
+      "x2": 656,
+      "y2": 81
+    },
+    {
+      "cursor": "pointer",
+      "type": "line",
+      "x1": 660,
+      "y1": 83,
+      "x2": 680,
+      "y2": 93
+    },
+    {
+      "cursor": "pointer",
+      "type": "line",
+      "x1": 690,
+      "y1": 93,
+      "x2": 760,
+      "y2": 81
+    },
+    {
+      "cursor": "pointer",
+      "type": "rectangle",
+      "x": 189,
+      "y": 102,
+      "width": 5,
+      "height": 9
+    },
+    {
+      "cursor": "text",
+      "type": "split",
+      "x": 167,
+      "y": 119,
+      "width": 12,
+      "height": 7
+    },
+    {
+      "cursor": "pointer",
+      "type": "rectangle",
+      "x": 189,
+      "y": 134,
+      "width": 5,
+      "height": 13
+    },
+    {
+      "cursor": "pointer",
+      "type": "rectangle",
+      "x": 203,
+      "y": 119,
+      "width": 14,
+      "height": 6
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 31,
+      "y": 104,
+      "radius": 11
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 29,
+      "y": 140,
+      "radius": 11
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 389,
+      "y": 69,
+      "radius": 13
+    },
+    {
+      "cursor": "text",
+      "type": "rectangle",
+      "x": 447,
+      "y": 129,
+      "width": 286,
+      "height": 42
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 281,
+      "y": 213,
+      "radius": 6
+    },
+    {
+      "cursor": "pointer",
+      "type": "circle",
+      "x": 352,
+      "y": 214,
+      "radius": 4
     }
   ], null, 2);
 }
