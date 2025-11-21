@@ -149,5 +149,19 @@
     "x": 352,
     "y": 214,
     "radius": 4
+  },
+  {
+    "cursor": "make_wire",
+    "shape": "circle",
+    "x": 686,
+    "y": 67,
+    "radius": 12
+  },
+  {
+    "cursor": "make_wire",
+    "shape": "circle",
+    "x": 534,
+    "y": 71,
+    "radius": 10
   }
 ]
