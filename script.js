@@ -303,15 +303,15 @@ function renderPreview() {
     ctx.lineWidth = isActive ? 3 : 2;
     ctx.fillStyle = fillStyle;
 
-    if (shape.type === "rectangle") {
+    if (shape.shape === "rectangle") {
       ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
       ctx.fillRect(shape.x, shape.y, shape.width, shape.height);
-    } else if (shape.type === "circle") {
+    } else if (shape.shape === "circle") {
       ctx.beginPath();
       ctx.arc(shape.x, shape.y, shape.radius, 0, 2 * Math.PI);
       ctx.stroke();
       ctx.fill();
-    } else if (shape.type === "line") {
+    } else if (shape.shape === "line") {
       ctx.beginPath();
       ctx.moveTo(shape.x1, shape.y1);
       ctx.lineTo(shape.x2, shape.y2);
@@ -486,25 +486,25 @@ if (previewCanvas) {
 }
 
 // Create shape object from drag coordinates
-function createShapeFromDrag(x1, y1, x2, y2, type) {
+function createShapeFromDrag(x1, y1, x2, y2, shapeType) {
   // Use most recent uploaded cursor, or fallback to "pointer"
   const shape = { cursor: lastUploadedCursor || "pointer" };
 
-  if (type === "rectangle") {
-    shape.type = "rectangle";
+  if (shapeType === "rectangle") {
+    shape.shape = "rectangle";
     shape.x = Math.min(x1, x2);
     shape.y = Math.min(y1, y2);
     shape.width = Math.abs(x2 - x1);
     shape.height = Math.abs(y2 - y1);
-  } else if (type === "circle") {
-    shape.type = "circle";
+  } else if (shapeType === "circle") {
+    shape.shape = "circle";
     shape.x = x1;
     shape.y = y1;
     const dx = x2 - x1;
     const dy = y2 - y1;
     shape.radius = Math.round(Math.sqrt(dx * dx + dy * dy));
-  } else if (type === "line") {
-    shape.type = "line";
+  } else if (shapeType === "line") {
+    shape.shape = "line";
     shape.x1 = x1;
     shape.y1 = y1;
     shape.x2 = x2;
@@ -524,15 +524,15 @@ function drawTemporaryShape(shape) {
   ctx.fillStyle = "rgba(0, 120, 255, 0.1)";
   ctx.setLineDash([5, 5]);
 
-  if (shape.type === "rectangle") {
+  if (shape.shape === "rectangle") {
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
     ctx.fillRect(shape.x, shape.y, shape.width, shape.height);
-  } else if (shape.type === "circle") {
+  } else if (shape.shape === "circle") {
     ctx.beginPath();
     ctx.arc(shape.x, shape.y, shape.radius, 0, 2 * Math.PI);
     ctx.stroke();
     ctx.fill();
-  } else if (shape.type === "line") {
+  } else if (shape.shape === "line") {
     ctx.beginPath();
     ctx.moveTo(shape.x1, shape.y1);
     ctx.lineTo(shape.x2, shape.y2);
@@ -607,14 +607,14 @@ function highlightShapeInEditor(shapeIndex) {
 
 // Check if point is in shape
 function isPointInShape(x, y, shape) {
-  if (shape.type === "rectangle") {
+  if (shape.shape === "rectangle") {
     return x >= shape.x && x <= shape.x + shape.width &&
            y >= shape.y && y <= shape.y + shape.height;
-  } else if (shape.type === "circle") {
+  } else if (shape.shape === "circle") {
     const dx = x - shape.x;
     const dy = y - shape.y;
     return dx * dx + dy * dy <= shape.radius * shape.radius;
-  } else if (shape.type === "line") {
+  } else if (shape.shape === "line") {
     // Line hit detection with tolerance
     const tolerance = 5;
     const dist = pointToLineDistance(x, y, shape.x1, shape.y1, shape.x2, shape.y2);
@@ -651,6 +651,21 @@ function pointToLineDistance(x, y, x1, y1, x2, y2) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+// Cursor name to file mapping for built-in cursors
+const cursorFileMap = {
+  "split": "cursors/spot_face_cutter.png",
+  "bendleg": "cursors/bendleg.png",
+  "bendpoint": "cursors/bendpoint.png",
+  "curve": "cursors/curve.png",
+  "magic_wand": "cursors/magic_wand.png",
+  "make_wire": "cursors/make_wire.png",
+  "new_bendpoint": "cursors/new_bendpoint.png",
+  "part_move": "cursors/part_move.png",
+  "rotate": "cursors/rotate.png",
+  "rubberband_move": "cursors/rubberband_move.png",
+  "scale": "cursors/scale.png"
+};
+
 // Get cursor for shape
 function getCursorForShape(shape) {
   if (!shape.cursor) return "default";
@@ -659,6 +674,11 @@ function getCursorForShape(shape) {
   if (cursorLibrary.has(shape.cursor)) {
     const cursor = cursorLibrary.get(shape.cursor);
     return `url('${cursor.url}') ${cursor.hotspot.x} ${cursor.hotspot.y}, auto`;
+  }
+
+  // Check if it's a mapped cursor file
+  if (cursorFileMap[shape.cursor]) {
+    return `url('${cursorFileMap[shape.cursor]}') 0 0, auto`;
   }
 
   // Otherwise use standard cursor name
@@ -670,7 +690,7 @@ if (shapeJsonEditor) {
   shapeJsonEditor.value = JSON.stringify([
     {
       "cursor": "pointer",
-      "type": "rectangle",
+      "shape": "rectangle",
       "x": 327,
       "y": 253,
       "width": 99,
@@ -678,7 +698,7 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "new_bendpoint_km2_1",
-      "type": "line",
+      "shape": "line",
       "x1": 388,
       "y1": 89,
       "x2": 380,
@@ -686,35 +706,35 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 322,
       "y": 247,
       "radius": 6
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 546,
       "y": 84,
       "radius": 6
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 675,
       "y": 51,
       "radius": 5
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 819,
       "y": 147,
       "radius": 31
     },
     {
       "cursor": "pointer",
-      "type": "line",
+      "shape": "line",
       "x1": 550,
       "y1": 71,
       "x2": 613,
@@ -722,7 +742,7 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "line",
+      "shape": "line",
       "x1": 618,
       "y1": 71,
       "x2": 656,
@@ -730,7 +750,7 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "line",
+      "shape": "line",
       "x1": 660,
       "y1": 83,
       "x2": 680,
@@ -738,7 +758,7 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "line",
+      "shape": "line",
       "x1": 690,
       "y1": 93,
       "x2": 760,
@@ -746,15 +766,15 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "rectangle",
+      "shape": "rectangle",
       "x": 189,
       "y": 102,
       "width": 5,
       "height": 9
     },
     {
-      "cursor": "text",
-      "type": "split",
+      "cursor": "split",
+      "shape": "rectangle",
       "x": 167,
       "y": 119,
       "width": 12,
@@ -762,7 +782,7 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "rectangle",
+      "shape": "rectangle",
       "x": 189,
       "y": 134,
       "width": 5,
@@ -770,7 +790,7 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "rectangle",
+      "shape": "rectangle",
       "x": 203,
       "y": 119,
       "width": 14,
@@ -778,28 +798,28 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 31,
       "y": 104,
       "radius": 11
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 29,
       "y": 140,
       "radius": 11
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 389,
       "y": 69,
       "radius": 13
     },
     {
       "cursor": "text",
-      "type": "rectangle",
+      "shape": "rectangle",
       "x": 447,
       "y": 129,
       "width": 286,
@@ -807,14 +827,14 @@ if (shapeJsonEditor) {
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 281,
       "y": 213,
       "radius": 6
     },
     {
       "cursor": "pointer",
-      "type": "circle",
+      "shape": "circle",
       "x": 352,
       "y": 214,
       "radius": 4
