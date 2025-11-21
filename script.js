@@ -127,10 +127,12 @@ cursorUploadInput.addEventListener("change", (event) => {
     reader.onload = (e) => {
       const dataURL = e.target.result;
       const cursorName = generateCursorName(file.name);
+      const hotspotX = parseInt(hotspotXInput.value) || 0;
+      const hotspotY = parseInt(hotspotYInput.value) || 0;
       cursorLibrary.set(cursorName, {
         url: dataURL,
         filename: file.name,
-        hotspot: { x: 0, y: 0 }
+        hotspot: { x: hotspotX, y: hotspotY }
       });
       lastUploadedCursor = cursorName;
       currentCursorURL = dataURL;
@@ -153,6 +155,16 @@ function applyCustomCursor(url) {
 function applyCurrentCursor() {
   if (currentCursorURL) {
     applyCustomCursor(currentCursorURL);
+
+    // Update hotspot in cursorLibrary for the last uploaded cursor
+    if (lastUploadedCursor && cursorLibrary.has(lastUploadedCursor)) {
+      const cursor = cursorLibrary.get(lastUploadedCursor);
+      const hotspotX = parseInt(hotspotXInput.value) || 0;
+      const hotspotY = parseInt(hotspotYInput.value) || 0;
+      cursor.hotspot = { x: hotspotX, y: hotspotY };
+      cursorLibrary.set(lastUploadedCursor, cursor);
+      saveCursorsToStorage();
+    }
   }
 }
 
