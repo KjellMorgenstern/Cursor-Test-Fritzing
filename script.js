@@ -1,5 +1,9 @@
 let div = document.getElementById("content");
 
+// Track selected cursor for shape creation
+let selectedCursorForShapes = null;
+let selectedCursorHotspot = { x: 0, y: 0 };
+
 let cursorTypes = [
   { cursor: "alias" },
   { cursor: "all-scroll" },
@@ -44,6 +48,13 @@ cursorTypes.forEach((item) => {
   cursorTestDiv.innerText = item.cursor;
   cursorTestDiv.style.cursor = item.cursor;
   cursorTestDiv.className = "cursorDiv";
+  cursorTestDiv.dataset.cursorName = item.cursor;
+  cursorTestDiv.dataset.hotspotX = "0";
+  cursorTestDiv.dataset.hotspotY = "0";
+
+  cursorTestDiv.addEventListener("click", function() {
+    selectCursorForShapes(item.cursor, 0, 0);
+  });
 
   div.appendChild(cursorTestDiv);
 });
@@ -71,6 +82,14 @@ function updateCursorTestArea() {
     cursorTestDiv.innerText = cursorName;
     cursorTestDiv.style.cursor = `url('${cursorFileMap[cursorName]}') 0 0, auto`;
     cursorTestDiv.className = "cursorDiv custom-cursor-div";
+    cursorTestDiv.dataset.cursorName = cursorName;
+    cursorTestDiv.dataset.hotspotX = "0";
+    cursorTestDiv.dataset.hotspotY = "0";
+
+    cursorTestDiv.addEventListener("click", function() {
+      selectCursorForShapes(cursorName, 0, 0);
+    });
+
     div.appendChild(cursorTestDiv);
   });
 
@@ -80,10 +99,67 @@ function updateCursorTestArea() {
     cursorTestDiv.innerText = name;
     cursorTestDiv.style.cursor = `url('${cursor.url}') ${cursor.hotspot.x} ${cursor.hotspot.y}, auto`;
     cursorTestDiv.className = "cursorDiv custom-cursor-div";
+    cursorTestDiv.dataset.cursorName = name;
+    cursorTestDiv.dataset.hotspotX = cursor.hotspot.x;
+    cursorTestDiv.dataset.hotspotY = cursor.hotspot.y;
+
+    cursorTestDiv.addEventListener("click", function() {
+      selectCursorForShapes(name, cursor.hotspot.x, cursor.hotspot.y);
+    });
+
     div.appendChild(cursorTestDiv);
   });
 }
 
+
+// Function to select a cursor for shape creation
+function selectCursorForShapes(cursorName, hotspotX, hotspotY) {
+  selectedCursorForShapes = cursorName;
+  selectedCursorHotspot = { x: hotspotX, y: hotspotY };
+
+  // Update visual selection - remove 'selected' class from all cursor divs
+  document.querySelectorAll('.cursorDiv').forEach(div => {
+    div.classList.remove('selected');
+  });
+
+  // Add 'selected' class to the clicked cursor div
+  document.querySelectorAll('.cursorDiv').forEach(div => {
+    if (div.dataset.cursorName === cursorName) {
+      div.classList.add('selected');
+    }
+  });
+
+  updateSelectedCursorDisplay();
+}
+
+// Update the display showing which cursor is selected
+function updateSelectedCursorDisplay() {
+  const display = document.getElementById("selectedCursorDisplay");
+  if (!display) return;
+
+  if (selectedCursorForShapes) {
+    let cursorPreview = "";
+
+    // Show actual cursor image for custom cursors
+    if (cursorLibrary.has(selectedCursorForShapes)) {
+      const cursor = cursorLibrary.get(selectedCursorForShapes);
+      cursorPreview = `<img src="${cursor.url}" class="cursor-preview-img" alt="cursor">`;
+    } else if (cursorFileMap[selectedCursorForShapes]) {
+      cursorPreview = `<img src="${cursorFileMap[selectedCursorForShapes]}" class="cursor-preview-img" alt="cursor">`;
+    } else {
+      // For standard CSS cursors, show hover area
+      cursorPreview = `<span class="cursor-preview" style="cursor: ${selectedCursorForShapes};">⬜</span>`;
+    }
+
+    display.innerHTML = `
+      <strong>Selected:</strong>
+      ${cursorPreview}
+      ${selectedCursorForShapes} (${selectedCursorHotspot.x}, ${selectedCursorHotspot.y})
+    `;
+  } else {
+    display.innerHTML = "";
+  }
+}
 
 function togglemode() {
 
@@ -137,7 +213,7 @@ cursorUploadInput.addEventListener("change", (event) => {
       lastUploadedCursor = cursorName;
       currentCursorURL = dataURL;
       applyCustomCursor(dataURL);
-      updateCursorList();
+      updateCursorTestArea();
       saveCursorsToStorage();
     };
     reader.readAsDataURL(file);
@@ -184,22 +260,6 @@ function resetCustomCursor() {
   hotspotYInput.value = 0;
 }
 
-// Update cursor list display
-function updateCursorList() {
-  const listElement = document.getElementById("cursorList");
-  if (listElement) {
-    listElement.innerHTML = "";
-    cursorLibrary.forEach((cursor, name) => {
-      const item = document.createElement("div");
-      item.className = "cursor-list-item";
-      item.textContent = `${name} (${cursor.filename})`;
-      listElement.appendChild(item);
-    });
-  }
-  // Also update the test area
-  updateCursorTestArea();
-}
-
 // Save cursors to localStorage
 function saveCursorsToStorage() {
   try {
@@ -223,7 +283,7 @@ function loadCursorsFromStorage() {
       cursorsArray.forEach(([name, cursor]) => {
         cursorLibrary.set(name, cursor);
       });
-      updateCursorList();
+      updateCursorTestArea();
     }
 
     if (storedCounter) {
@@ -643,8 +703,8 @@ if (previewCanvas) {
 
 // Create shape object from drag coordinates
 function createShapeFromDrag(x1, y1, x2, y2, shapeType) {
-  // Use most recent uploaded cursor, or fallback to "pointer"
-  const shape = { cursor: lastUploadedCursor || "pointer" };
+  // Use selected cursor, or fallback to "pointer"
+  const shape = { cursor: selectedCursorForShapes || "pointer" };
 
   if (shapeType === "rectangle") {
     shape.shape = "rectangle";

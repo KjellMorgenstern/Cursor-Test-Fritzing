@@ -47,22 +47,7 @@
     cursor: default;
 }
 
-.cursor-list-item {
-    padding: 0.25rem 0.5rem;
-    margin-bottom: 0.25rem;
-    background-color: #f8f9fa;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-    font-family: monospace;
-}
-
 #shapeJsonEditor {
-    font-size: 0.875rem;
-}
-
-#cursorList:empty::before {
-    content: "Upload cursors above to see them here";
-    color: #6c757d;
     font-size: 0.875rem;
 }
 
@@ -89,4 +74,58 @@
     margin: 0;
     color: #333;
     font-weight: 600;
+}
+
+/* Make cursor divs appear clickable */
+.cursorDiv {
+    cursor: pointer !important;
+    transition: all 0.2s ease;
+}
+
+.cursorDiv:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.cursorDiv.selected {
+    border: 3px solid #0078ff !important;
+    box-shadow: 0 0 10px rgba(0, 120, 255, 0.5);
+}
+
+/* Selected cursor display */
+#selectedCursorDisplay {
+    padding: 0.25rem 0.5rem;
+    background-color: #e7f3ff;
+    border: 1px solid #0078ff;
+    border-radius: 0.25rem;
+    color: #0056b3;
+}
+
+.cursor-preview {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    margin: 0 0.25rem;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.cursor-preview-img {
+    display: inline-block;
+    max-width: 32px;
+    max-height: 32px;
+    margin: 0 0.25rem;
+    vertical-align: middle;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+/* Cursor test area styling */
+#content {
+    margin: 2rem auto;
+    max-width: 1200px;
+    padding: 0 1rem;
 }

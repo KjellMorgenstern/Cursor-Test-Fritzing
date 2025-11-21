@@ -134,6 +134,8 @@
       </div>
     </div>
 
+    <div id="content" class="d-flex justify-content-center flex-wrap"></div>
+
     <div class="container my-4">
       <div class="card">
         <div class="card-body">
@@ -148,37 +150,34 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label d-block">Uploaded Cursors:</label>
-                <div id="cursorList" class="border rounded p-2" style="min-height: 60px; max-height: 150px; overflow-y: auto;">
-                  <small class="text-muted">Upload cursors above to see them here</small>
-                </div>
-              </div>
-
-              <div class="mb-3">
                 <label for="shapeJsonEditor" class="form-label">Shape Definitions (JSON):</label>
                 <small class="form-text text-muted d-block mb-2">
                   Define rectangles, circles, and lines with cursor associations
                 </small>
-                <textarea class="form-control font-monospace" id="shapeJsonEditor" rows="12"></textarea>
+                <textarea class="form-control font-monospace" id="shapeJsonEditor" rows="20"></textarea>
                 <button type="button" class="btn btn-primary mt-2" onclick="updateShapesFromJSON()">Apply Shapes</button>
               </div>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label d-block">Preview Canvas:</label>
+              <label class="form-label d-block">Add shapes to test cursors.</label>
               <div class="mb-2">
-                <div class="btn-group" role="group">
-                  <input type="radio" class="btn-check" name="drawMode" id="drawModeNone" value="none" checked>
-                  <label class="btn btn-outline-secondary btn-sm" for="drawModeNone">Hover</label>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="drawMode" id="drawModeNone" value="none" checked>
+                    <label class="btn btn-outline-secondary btn-sm" for="drawModeNone">Hover</label>
+                  </div>
+                  <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="drawMode" id="drawModeRect" value="rectangle">
+                    <label class="btn btn-outline-primary btn-sm" for="drawModeRect">Rectangle</label>
 
-                  <input type="radio" class="btn-check" name="drawMode" id="drawModeRect" value="rectangle">
-                  <label class="btn btn-outline-primary btn-sm" for="drawModeRect">Rectangle</label>
+                    <input type="radio" class="btn-check" name="drawMode" id="drawModeCircle" value="circle">
+                    <label class="btn btn-outline-primary btn-sm" for="drawModeCircle">Circle</label>
 
-                  <input type="radio" class="btn-check" name="drawMode" id="drawModeCircle" value="circle">
-                  <label class="btn btn-outline-primary btn-sm" for="drawModeCircle">Circle</label>
-
-                  <input type="radio" class="btn-check" name="drawMode" id="drawModeLine" value="line">
-                  <label class="btn btn-outline-primary btn-sm" for="drawModeLine">Line</label>
+                    <input type="radio" class="btn-check" name="drawMode" id="drawModeLine" value="line">
+                    <label class="btn btn-outline-primary btn-sm" for="drawModeLine">Line</label>
+                  </div>
+                  <div id="selectedCursorDisplay" class="ms-2 small"></div>
                 </div>
               </div>
               <div class="border rounded p-2" style="overflow: auto; max-height: 600px;">
@@ -194,8 +193,6 @@
         </div>
       </div>
     </div>
-
-    <div id="content" class="d-flex justify-content-center flex-wrap"></div>
 
     <footer class="text-center py-4 bg-light mt-auto">
       <p class="mb-2">
