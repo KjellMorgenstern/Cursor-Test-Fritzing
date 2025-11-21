@@ -372,6 +372,14 @@ function getDrawMode() {
   return checked ? checked.value : "none";
 }
 
+// Add event listeners to draw mode buttons to update transparency
+const drawModeButtons = document.querySelectorAll('input[name="drawMode"]');
+drawModeButtons.forEach(button => {
+  button.addEventListener("change", () => {
+    renderPreview();
+  });
+});
+
 // Track JSON editor focus and cursor position
 if (shapeJsonEditor) {
   shapeJsonEditor.addEventListener("focus", () => {
@@ -399,30 +407,55 @@ function updateActiveShapeFromCursor() {
     const jsonText = shapeJsonEditor.value;
     const shapes = JSON.parse(jsonText);
 
-    // Find which shape object contains the cursor position
-    let currentPos = 0;
+    // Find object boundaries by tracking braces in the actual text
     let foundIndex = -1;
+    let depth = 0;
+    let objectCount = -1;
+    let objectStart = -1;
+    let inString = false;
+    let escapeNext = false;
+    let inArray = false;
 
-    // Parse through the JSON structure to find cursor position
-    const arrayMatch = jsonText.match(/^\s*\[/);
-    if (!arrayMatch) return;
+    for (let i = 0; i < jsonText.length; i++) {
+      const char = jsonText[i];
 
-    currentPos = arrayMatch[0].length;
-
-    for (let i = 0; i < shapes.length; i++) {
-      const shapeText = JSON.stringify(shapes[i], null, 2);
-      const shapeStart = currentPos;
-      const shapeEnd = currentPos + shapeText.length;
-
-      if (cursorPos >= shapeStart && cursorPos <= shapeEnd) {
-        foundIndex = i;
-        break;
+      // Handle string escaping
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
       }
 
-      currentPos = shapeEnd + 1; // +1 for comma
-      // Skip whitespace
-      while (currentPos < jsonText.length && /[\s,]/.test(jsonText[currentPos])) {
-        currentPos++;
+      // Track string state
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      // Only process non-string characters
+      if (!inString) {
+        if (char === '[') {
+          inArray = true;
+        } else if (char === '{') {
+          if (inArray && depth === 0) {
+            // Start of a shape object (directly inside array)
+            objectCount++;
+            objectStart = i;
+          }
+          depth++;
+        } else if (char === '}') {
+          depth--;
+          if (inArray && depth === 0) {
+            // End of a shape object
+            if (cursorPos >= objectStart && cursorPos <= i) {
+              foundIndex = objectCount;
+              break;
+            }
+          }
+        }
       }
     }
 
@@ -613,29 +646,60 @@ function highlightShapeInEditor(shapeIndex) {
     const jsonText = shapeJsonEditor.value;
     const parsedShapes = JSON.parse(jsonText);
 
-    // Find the position of this shape in the text
-    let currentPos = 0;
-    const arrayMatch = jsonText.match(/^\s*\[/);
-    if (!arrayMatch) return;
+    // Find object boundaries by tracking braces in the actual text
+    let depth = 0;
+    let objectCount = -1;
+    let objectStart = -1;
+    let objectEnd = -1;
+    let inString = false;
+    let escapeNext = false;
+    let inArray = false;
 
-    currentPos = arrayMatch[0].length;
+    for (let i = 0; i < jsonText.length; i++) {
+      const char = jsonText[i];
 
-    for (let i = 0; i < parsedShapes.length; i++) {
-      const shapeText = JSON.stringify(parsedShapes[i], null, 2);
-
-      if (i === shapeIndex) {
-        // Select this shape's text
-        shapeJsonEditor.focus();
-        shapeJsonEditor.setSelectionRange(currentPos, currentPos + shapeText.length);
-        activeShapeIndex = shapeIndex;
-        renderPreview();
-        return;
+      // Handle string escaping
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
       }
 
-      currentPos += shapeText.length + 1; // +1 for comma
-      // Skip whitespace
-      while (currentPos < jsonText.length && /[\s,]/.test(jsonText[currentPos])) {
-        currentPos++;
+      // Track string state
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      // Only process non-string characters
+      if (!inString) {
+        if (char === '[') {
+          inArray = true;
+        } else if (char === '{') {
+          if (inArray && depth === 0) {
+            // Start of a shape object (directly inside array)
+            objectCount++;
+            objectStart = i;
+          }
+          depth++;
+        } else if (char === '}') {
+          depth--;
+          if (inArray && depth === 0) {
+            // End of a shape object
+            objectEnd = i;
+            if (objectCount === shapeIndex) {
+              // Select this shape's text
+              shapeJsonEditor.focus();
+              shapeJsonEditor.setSelectionRange(objectStart, objectEnd + 1);
+              activeShapeIndex = shapeIndex;
+              renderPreview();
+              return;
+            }
+          }
+        }
       }
     }
   } catch (e) {
