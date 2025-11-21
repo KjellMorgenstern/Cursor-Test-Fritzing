@@ -149,6 +149,69 @@
       </div>
     </div>
 
+    <div class="container my-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Interactive Preview Area</h5>
+          <p class="card-text">Upload a screenshot and define cursor regions with JSON</p>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="previewImageUpload" class="form-label">Upload Background Image:</label>
+                <input class="form-control" type="file" id="previewImageUpload" accept="image/*">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label d-block">Uploaded Cursors:</label>
+                <div id="cursorList" class="border rounded p-2" style="min-height: 60px; max-height: 150px; overflow-y: auto;">
+                  <small class="text-muted">Upload cursors above to see them here</small>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="shapeJsonEditor" class="form-label">Shape Definitions (JSON):</label>
+                <small class="form-text text-muted d-block mb-2">
+                  Define rectangles, circles, and lines with cursor associations
+                </small>
+                <textarea class="form-control font-monospace" id="shapeJsonEditor" rows="12"></textarea>
+                <button type="button" class="btn btn-primary mt-2" onclick="updateShapesFromJSON()">Apply Shapes</button>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label d-block">Preview Canvas:</label>
+              <div class="border rounded p-2" style="overflow: auto; max-height: 600px;">
+                <canvas id="previewCanvas" style="display: block; max-width: 100%;"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <h6>JSON Format Examples:</h6>
+            <pre class="bg-light p-2 rounded"><code>[
+  {
+    "type": "rectangle",
+    "x": 50, "y": 50, "width": 100, "height": 80,
+    "cursor": "pointer"
+  },
+  {
+    "type": "circle",
+    "x": 250, "y": 100, "radius": 50,
+    "cursor": "crosshair"
+  },
+  {
+    "type": "line",
+    "x1": 100, "y1": 200, "x2": 300, "y2": 250,
+    "cursor": "move"
+  }
+]</code></pre>
+            <small class="text-muted">Use uploaded cursor names (e.g., "my_cursor_1") or standard CSS cursor names</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="content" class="d-flex justify-content-center flex-wrap"></div>
 
     <footer class="text-center py-4 bg-light mt-auto">

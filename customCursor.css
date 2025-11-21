@@ -40,3 +40,28 @@
         width: 100%;
     }
 }
+
+/* Preview area styles */
+#previewCanvas {
+    border: 1px solid #ddd;
+    cursor: default;
+}
+
+.cursor-list-item {
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.25rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-family: monospace;
+}
+
+#shapeJsonEditor {
+    font-size: 0.875rem;
+}
+
+#cursorList:empty::before {
+    content: "Upload cursors above to see them here";
+    color: #6c757d;
+    font-size: 0.875rem;
+}
