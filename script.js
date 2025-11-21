@@ -319,12 +319,24 @@ function getDrawMode() {
   return checked ? checked.value : "none";
 }
 
+// Get canvas coordinates accounting for scale
+function getCanvasCoordinates(e) {
+  const rect = previewCanvas.getBoundingClientRect();
+  const scaleX = previewCanvas.width / rect.width;
+  const scaleY = previewCanvas.height / rect.height;
+
+  const x = Math.round((e.clientX - rect.left) * scaleX);
+  const y = Math.round((e.clientY - rect.top) * scaleY);
+
+  return { x, y };
+}
+
 // Handle canvas hover to apply cursor
 if (previewCanvas) {
   previewCanvas.addEventListener("mousemove", (e) => {
-    const rect = previewCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const coords = getCanvasCoordinates(e);
+    const x = coords.x;
+    const y = coords.y;
 
     drawMode = getDrawMode();
 
@@ -350,18 +362,14 @@ if (previewCanvas) {
     drawMode = getDrawMode();
     if (drawMode === "none") return;
 
-    const rect = previewCanvas.getBoundingClientRect();
-    drawStart.x = Math.round(e.clientX - rect.left);
-    drawStart.y = Math.round(e.clientY - rect.top);
+    const coords = getCanvasCoordinates(e);
+    drawStart.x = coords.x;
+    drawStart.y = coords.y;
     isDrawing = true;
   });
 
   previewCanvas.addEventListener("mouseup", (e) => {
     if (!isDrawing) return;
-
-    const rect = previewCanvas.getBoundingClientRect();
-    const endX = Math.round(e.clientX - rect.left);
-    const endY = Math.round(e.clientY - rect.top);
 
     if (currentDrawnShape) {
       displayGeneratedJson(currentDrawnShape);
