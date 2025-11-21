@@ -41,6 +41,7 @@
 
     <link id="theme-style" rel="stylesheet" href="light.css" />
     <link rel="stylesheet" href="toggleButton.css" />
+    <link rel="stylesheet" href="customCursor.css" />
     <link rel="icon" href="assets/images/favicon.webp" type="image/png" />
 
     <script type="application/ld+json">
@@ -102,6 +103,52 @@
         </svg>
       </label>
     </div>
+
+    <div class="container my-4 custom-cursor-section">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Custom Cursor Tester</h5>
+          <p class="card-text">Upload your own cursor or try our pre-made examples!</p>
+
+          <div class="mb-3">
+            <label for="cursorUpload" class="form-label">Upload Custom Cursor (PNG, GIF, SVG, CUR, ICO):</label>
+            <input class="form-control" type="file" id="cursorUpload" accept="image/*,.cur,.ico">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label d-block">Cursor Hotspot Coordinates:</label>
+            <small class="form-text text-muted d-block mb-2">
+              The hotspot is the active point of the cursor (e.g., tip of arrow). Default is (0, 0) = top-left corner.
+            </small>
+            <div class="hotspot-controls">
+              <div class="hotspot-input-group">
+                <label for="hotspotX" class="form-label">X:</label>
+                <input type="number" class="form-control" id="hotspotX" value="0" min="0" max="128">
+              </div>
+              <div class="hotspot-input-group">
+                <label for="hotspotY" class="form-label">Y:</label>
+                <input type="number" class="form-control" id="hotspotY" value="0" min="0" max="128">
+              </div>
+              <button type="button" class="btn btn-secondary" onclick="applyCurrentCursor()">Apply</button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label d-block">Try Pre-made Cursors:</label>
+            <div class="btn-group" role="group">
+              <button type="button" class="btn btn-outline-primary" onclick="loadTestCursor('test1')">Test Cursor 1</button>
+              <button type="button" class="btn btn-outline-primary" onclick="loadTestCursor('test2')">Test Cursor 2</button>
+              <button type="button" class="btn btn-outline-secondary" onclick="resetCustomCursor()">Reset</button>
+            </div>
+          </div>
+
+          <div id="customCursorTest" class="border rounded">
+            Hover here to test your custom cursor!
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="content" class="d-flex justify-content-center flex-wrap"></div>
 
     <footer class="text-center py-4 bg-light mt-auto">

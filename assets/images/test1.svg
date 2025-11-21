@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <title>trial cursor</title>
+  <g id="Layer_1">
+    <g>
+      <rect fill="#fff" stroke="#000" stroke-width="1" stroke-miterlimit="10" stroke-linejoin="round"
+            x="0.982" y="0.675" width="8" height="8" rx="0.563" ry="0.563"/>
+
+      <path fill="#fff" stroke="#000" stroke-width="1" stroke-miterlimit="10" stroke-linejoin="round"
+            d="M16.424,11.825,3.277,1.414a.87.87,0,0,0-1.41.708L2.34,18.357a.724.724,0,0,0,1.18.541l3.264-2.651a.726.726,0,0,1,1.1.233l3.047,5.957a.915.915,0,0,0,1.232.4l1.9-.969a.915.915,0,0,0,.4-1.232L11.527,14.9a.726.726,0,0,1,.514-1.044l4.065-.75A.724.724,0,0,0,16.424,11.825Z"
+            transform="translate(2.996, 3.616)"/>
+
+      <path fill="#fff" stroke="#000" stroke-width="1" stroke-miterlimit="10" stroke-linejoin="round"
+            d="m0 0 h4 v2 h-4 v4h-2 v-4 h-4 v-2 h4 v-4 h2 z"
+            transform="translate(23.891, 4.931)"/>
+    </g>
+  </g>
+</svg>

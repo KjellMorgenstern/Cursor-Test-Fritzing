@@ -1,0 +1,42 @@
+/* Custom Cursor Tester Layout */
+.custom-cursor-section {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#customCursorTest {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.hotspot-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.hotspot-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.hotspot-input-group input {
+    width: 80px;
+}
+
+@media (max-width: 576px) {
+    .hotspot-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hotspot-input-group input {
+        width: 100%;
+    }
+}

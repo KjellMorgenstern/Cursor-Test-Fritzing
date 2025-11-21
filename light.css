@@ -31,4 +31,18 @@ body{
     transition: background-color 0.5s ease;
 }
 
-  
+#customCursorTest{
+    background-color: #f8f9fa;
+    min-height: 150px;
+    cursor: default;
+    transition: background-color 0.3s ease;
+}
+
+#customCursorTest:hover{
+    background-color: #e9ecef;
+}
+
+.card{
+    background-color: white;
+    transition: background-color 0.5s ease;
+}

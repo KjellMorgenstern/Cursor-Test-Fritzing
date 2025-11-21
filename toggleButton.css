@@ -1,4 +1,4 @@
-label {
+#darkmode-toggle + label {
     width:50px;
     height:20px;
     position: relative;
@@ -9,7 +9,7 @@ label {
     cursor: pointer;
   }
 
-  label:after {
+  #darkmode-toggle + label:after {
     content: "";
     width:20px;
     height: 20px;
@@ -20,26 +20,26 @@ label {
     border-radius: 10px;
     box-shadow: 0px 5px 10px rgba(0,0,0,0.2);
   }
-  input {
+  #darkmode-toggle {
     width: 0;
     height: 0;
     visibility: hidden;
   }
 
-  input:checked + label {
+  #darkmode-toggle:checked + label {
     background: #242424;
   }
-  input:checked + label:after {
+  #darkmode-toggle:checked + label:after {
     left:50px;
     transform: translateX(-100%);
     background: linear-gradient(180deg,#777,#3a3a3a);
   }
-  label, label:after {
+  #darkmode-toggle + label, #darkmode-toggle + label:after {
     transition: 0.3s
   }
 
-  label:active:after{ 
-    width: 50px; 
+  #darkmode-toggle + label:active:after{
+    width: 50px;
   }
 
   .background {
@@ -51,29 +51,29 @@ label {
     transition: 0.3s;
   }
 
-  input:checked + label + .background {
+  #darkmode-toggle:checked + label + .background {
     background:#242424;
   }
 
-  label svg {
+  #darkmode-toggle + label svg {
     position: absolute;
     width: 20px;
     top:2px;
     z-index: 100;
   }
-  label svg.sun {
+  #darkmode-toggle + label svg.sun {
     left:0px;
     fill:#fff;
     transition: 0.3s;
   }
-  label svg.moon {
+  #darkmode-toggle + label svg.moon {
     left:30px;
     fill:#7e7e7e;
     transition: 0.3s;
   }
-  input:checked + label svg.sun {
+  #darkmode-toggle:checked + label svg.sun {
     fill:#7e7e7e;
   }
-  input:checked + label svg.moon {
+  #darkmode-toggle:checked + label svg.moon {
     fill:#fff;
   }

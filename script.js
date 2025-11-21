@@ -32,6 +32,7 @@ let cursorTypes = [
   { cursor: "se-resize" },
   { cursor: "sw-resize" },
   { cursor: "text" },
+  { cursor: "vertical-text" },
   { cursor: "w-resize" },
   { cursor: "wait" },
   { cursor: "zoom-in" },
@@ -58,4 +59,53 @@ function togglemode() {
   } else {
     themeStyle.setAttribute("href", "light.css");
   }
+}
+
+// Custom cursor functionality
+const customCursorTestArea = document.getElementById("customCursorTest");
+const cursorUploadInput = document.getElementById("cursorUpload");
+const hotspotXInput = document.getElementById("hotspotX");
+const hotspotYInput = document.getElementById("hotspotY");
+
+// Store current cursor URL for re-applying with different hotspots
+let currentCursorURL = null;
+
+// Handle file upload for custom cursor
+cursorUploadInput.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const blobURL = URL.createObjectURL(file);
+    currentCursorURL = blobURL;
+    applyCustomCursor(blobURL);
+  }
+});
+
+// Apply custom cursor to test area
+function applyCustomCursor(url) {
+  const hotspotX = hotspotXInput.value || 0;
+  const hotspotY = hotspotYInput.value || 0;
+  customCursorTestArea.style.cursor = `url('${url}') ${hotspotX} ${hotspotY}, auto`;
+}
+
+// Apply current cursor with updated hotspot values
+function applyCurrentCursor() {
+  if (currentCursorURL) {
+    applyCustomCursor(currentCursorURL);
+  }
+}
+
+// Load pre-made test cursors
+function loadTestCursor(testName) {
+  const cursorPath = `assets/images/${testName}.svg`;
+  currentCursorURL = cursorPath;
+  applyCustomCursor(cursorPath);
+}
+
+// Reset custom cursor to default
+function resetCustomCursor() {
+  customCursorTestArea.style.cursor = "default";
+  cursorUploadInput.value = ""; // Clear file input
+  currentCursorURL = null;
+  hotspotXInput.value = 0;
+  hotspotYInput.value = 0;
 }
