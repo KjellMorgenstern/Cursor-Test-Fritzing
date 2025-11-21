@@ -787,161 +787,17 @@ function getCursorForShape(shape) {
   return shape.cursor;
 }
 
-// Initialize JSON editor with default value
-if (shapeJsonEditor) {
-  shapeJsonEditor.value = JSON.stringify([
-    {
-      "cursor": "pointer",
-      "shape": "rectangle",
-      "x": 327,
-      "y": 253,
-      "width": 99,
-      "height": 112
-    },
-    {
-      "cursor": "new_bendpoint_km2_1",
-      "shape": "line",
-      "x1": 388,
-      "y1": 89,
-      "x2": 380,
-      "y2": 241
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 322,
-      "y": 247,
-      "radius": 6
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 546,
-      "y": 84,
-      "radius": 6
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 675,
-      "y": 51,
-      "radius": 5
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 819,
-      "y": 147,
-      "radius": 31
-    },
-    {
-      "cursor": "pointer",
-      "shape": "line",
-      "x1": 550,
-      "y1": 71,
-      "x2": 613,
-      "y2": 69
-    },
-    {
-      "cursor": "pointer",
-      "shape": "line",
-      "x1": 618,
-      "y1": 71,
-      "x2": 656,
-      "y2": 81
-    },
-    {
-      "cursor": "pointer",
-      "shape": "line",
-      "x1": 660,
-      "y1": 83,
-      "x2": 680,
-      "y2": 93
-    },
-    {
-      "cursor": "pointer",
-      "shape": "line",
-      "x1": 690,
-      "y1": 93,
-      "x2": 760,
-      "y2": 81
-    },
-    {
-      "cursor": "pointer",
-      "shape": "rectangle",
-      "x": 189,
-      "y": 102,
-      "width": 5,
-      "height": 9
-    },
-    {
-      "cursor": "split",
-      "shape": "rectangle",
-      "x": 167,
-      "y": 119,
-      "width": 12,
-      "height": 7
-    },
-    {
-      "cursor": "pointer",
-      "shape": "rectangle",
-      "x": 189,
-      "y": 134,
-      "width": 5,
-      "height": 13
-    },
-    {
-      "cursor": "pointer",
-      "shape": "rectangle",
-      "x": 203,
-      "y": 119,
-      "width": 14,
-      "height": 6
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 31,
-      "y": 104,
-      "radius": 11
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 29,
-      "y": 140,
-      "radius": 11
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 389,
-      "y": 69,
-      "radius": 13
-    },
-    {
-      "cursor": "text",
-      "shape": "rectangle",
-      "x": 447,
-      "y": 129,
-      "width": 286,
-      "height": 42
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 281,
-      "y": 213,
-      "radius": 6
-    },
-    {
-      "cursor": "pointer",
-      "shape": "circle",
-      "x": 352,
-      "y": 214,
-      "radius": 4
+// Load default JSON from file
+async function loadDefaultJSON() {
+  try {
+    const response = await fetch('assets/fritzing_testview.json');
+    const defaultShapes = await response.json();
+    if (shapeJsonEditor) {
+      shapeJsonEditor.value = JSON.stringify(defaultShapes, null, 2);
     }
-  ], null, 2);
+  } catch (e) {
+    console.error("Failed to load default JSON:", e);
+  }
 }
 
 // Load default background image
@@ -952,20 +808,22 @@ function loadDefaultImage() {
     renderPreview();
   };
   img.onerror = () => {
-    console.error("Failed to load default image: fritzing_testview.png");
+    console.error("Failed to load default image: assets/fritzing_testview.png");
   };
-  img.src = "fritzing_testview.png";
+  img.src = "assets/fritzing_testview.png";
 }
 
 // Initialize on page load
-function initializeApp() {
+async function initializeApp() {
   // Load saved cursors
   loadCursorsFromStorage();
 
-  // Load saved shapes JSON
+  // Load saved shapes JSON or default from file
   const hasStoredShapes = localStorage.getItem("shapesJSON");
   if (hasStoredShapes) {
     loadShapesFromStorage();
+  } else {
+    await loadDefaultJSON();
   }
 
   // Load preview image (stored or default)
