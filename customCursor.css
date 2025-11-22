@@ -78,7 +78,6 @@
 
 /* Make cursor divs appear clickable */
 .cursorDiv {
-    cursor: pointer !important;
     transition: all 0.2s ease;
 }
 
