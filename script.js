@@ -175,12 +175,14 @@ function selectCursorForShapes(cursorName, hotspotX, hotspotY) {
     currentCursorURL = cursor.originalUrl || cursor.url;
     hotspotXInput.value = cursor.hotspot.x;
     hotspotYInput.value = cursor.hotspot.y;
+    drawCursorZoomPreview();
   } else if (cursorFileMap[cursorName]) {
     customCursorTestArea.style.cursor = `url('${cursorFileMap[cursorName]}') ${hotspotX} ${hotspotY}, auto`;
     lastUploadedCursor = null;
     currentCursorURL = cursorFileMap[cursorName];
     hotspotXInput.value = hotspotX;
     hotspotYInput.value = hotspotY;
+    drawCursorZoomPreview();
   } else {
     // Standard cursor
     customCursorTestArea.style.cursor = cursorName;
@@ -188,6 +190,7 @@ function selectCursorForShapes(cursorName, hotspotX, hotspotY) {
     currentCursorURL = null;
     hotspotXInput.value = hotspotX;
     hotspotYInput.value = hotspotY;
+    drawCursorZoomPreview();
   }
 
   updateSelectedCursorDisplay();
@@ -270,6 +273,7 @@ const customCursorTestArea = document.getElementById("customCursorTest");
 const cursorUploadInput = document.getElementById("cursorUpload");
 const hotspotXInput = document.getElementById("hotspotX");
 const hotspotYInput = document.getElementById("hotspotY");
+const cursorZoomPreview = document.getElementById("cursorZoomPreview");
 
 // Add red dot to cursor image at hotspot position
 function addHotspotToCursor(imageDataURL, hotspotX, hotspotY) {
@@ -285,14 +289,14 @@ function addHotspotToCursor(imageDataURL, hotspotX, hotspotY) {
       // Draw original cursor image
       ctx.drawImage(img, 0, 0);
 
-      // Draw a red crosshair (1 pixel thick, 10 pixels long)
+      // Draw a red crosshair (1 pixel thick, 11 pixels long - odd number so it's perfectly centered)
       ctx.fillStyle = "#ff0000";
 
-      // Horizontal line (10 pixels wide, 1 pixel tall)
-      ctx.fillRect(hotspotX - 5, hotspotY, 10, 1);
+      // Horizontal line (11 pixels wide, 1 pixel tall)
+      ctx.fillRect(hotspotX - 5, hotspotY, 11, 1);
 
-      // Vertical line (1 pixel wide, 10 pixels tall)
-      ctx.fillRect(hotspotX, hotspotY - 5, 1, 10);
+      // Vertical line (1 pixel wide, 11 pixels tall)
+      ctx.fillRect(hotspotX, hotspotY - 5, 1, 11);
 
       // Convert back to data URL
       resolve(canvas.toDataURL());
@@ -307,6 +311,89 @@ function addHotspotToCursor(imageDataURL, hotspotX, hotspotY) {
 
 // Store current cursor URL for re-applying with different hotspots
 let currentCursorURL = null;
+
+// Draw cursor zoom preview
+function drawCursorZoomPreview() {
+  if (!cursorZoomPreview || !currentCursorURL) return;
+
+  const ctx = cursorZoomPreview.getContext("2d");
+  const canvas = cursorZoomPreview;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw checkerboard background
+  const checkerSize = 4;
+  for (let y = 0; y < canvas.height; y += checkerSize) {
+    for (let x = 0; x < canvas.width; x += checkerSize) {
+      ctx.fillStyle = ((x / checkerSize + y / checkerSize) % 2 === 0) ? "#ffffff" : "#e0e0e0";
+      ctx.fillRect(x, y, checkerSize, checkerSize);
+    }
+  }
+
+  // Load and draw cursor at 4x zoom
+  const img = new Image();
+  img.onload = () => {
+    // Draw cursor scaled 4x
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, img.width * 4, img.height * 4);
+
+    // Draw crosshair at hotspot position
+    const hotspotX = parseInt(hotspotXInput.value) || 0;
+    const hotspotY = parseInt(hotspotYInput.value) || 0;
+
+    ctx.strokeStyle = "#00ff00";
+    ctx.lineWidth = 1;
+
+    // Horizontal line
+    ctx.beginPath();
+    ctx.moveTo(0, hotspotY * 4 + 2);
+    ctx.lineTo(canvas.width, hotspotY * 4 + 2);
+    ctx.stroke();
+
+    // Vertical line
+    ctx.beginPath();
+    ctx.moveTo(hotspotX * 4 + 2, 0);
+    ctx.lineTo(hotspotX * 4 + 2, canvas.height);
+    ctx.stroke();
+  };
+  img.src = currentCursorURL;
+}
+
+// Handle clicks on cursor zoom preview to set hotspot
+if (cursorZoomPreview) {
+  cursorZoomPreview.addEventListener("click", (e) => {
+    if (!currentCursorURL) return;
+
+    const rect = cursorZoomPreview.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Convert from 4x zoom to actual cursor coordinates
+    const cursorX = Math.floor(x / 4);
+    const cursorY = Math.floor(y / 4);
+
+    // Update hotspot inputs
+    hotspotXInput.value = cursorX;
+    hotspotYInput.value = cursorY;
+
+    // Apply the new hotspot
+    applyCurrentCursor();
+  });
+}
+
+// Update zoom preview when hotspot inputs change
+if (hotspotXInput) {
+  hotspotXInput.addEventListener("input", () => {
+    drawCursorZoomPreview();
+  });
+}
+
+if (hotspotYInput) {
+  hotspotYInput.addEventListener("input", () => {
+    drawCursorZoomPreview();
+  });
+}
 
 // Cursor storage with generated names
 const cursorLibrary = new Map();
@@ -385,6 +472,7 @@ cursorUploadInput.addEventListener("change", async (event) => {
           applyCustomCursor(cursorWithHotspot);
           updateCursorTestArea();
           saveCursorsToStorage();
+          drawCursorZoomPreview();
         };
         textReader.readAsText(file);
       } else {
@@ -403,6 +491,7 @@ cursorUploadInput.addEventListener("change", async (event) => {
         applyCustomCursor(cursorWithHotspot);
         updateCursorTestArea();
         saveCursorsToStorage();
+        drawCursorZoomPreview();
       }
     };
     reader.readAsDataURL(file);
@@ -434,6 +523,7 @@ async function applyCurrentCursor() {
     applyCustomCursor(cursorWithHotspot);
     updateCursorTestArea();
     saveCursorsToStorage();
+    drawCursorZoomPreview();
   }
 }
 

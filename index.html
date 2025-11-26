@@ -115,6 +115,10 @@
                 <input type="number" class="form-control" id="hotspotY" value="0" min="0" max="128">
               </div>
               <button type="button" class="btn btn-secondary" onclick="applyCurrentCursor()">Apply</button>
+              <div style="margin-left: 1rem;">
+                <canvas id="cursorZoomPreview" width="128" height="128" style="border: 1px solid #ccc; cursor: crosshair; image-rendering: pixelated;"></canvas>
+                <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">Click to set hotspot</div>
+              </div>
             </div>
           </div>
 
