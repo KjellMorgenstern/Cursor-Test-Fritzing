@@ -96,12 +96,50 @@ function updateCursorTestArea() {
   // Add uploaded cursors
   cursorLibrary.forEach((cursor, name) => {
     const cursorTestDiv = document.createElement("div");
-    cursorTestDiv.innerText = name;
     cursorTestDiv.style.cursor = `url('${cursor.url}') ${cursor.hotspot.x} ${cursor.hotspot.y}, auto`;
     cursorTestDiv.className = "cursorDiv custom-cursor-div";
     cursorTestDiv.dataset.cursorName = name;
     cursorTestDiv.dataset.hotspotX = cursor.hotspot.x;
     cursorTestDiv.dataset.hotspotY = cursor.hotspot.y;
+    cursorTestDiv.style.position = "relative";
+
+    // Create cursor name span
+    const nameSpan = document.createElement("span");
+    nameSpan.innerText = name;
+    nameSpan.style.display = "inline-block";
+    nameSpan.style.maxWidth = "calc(100% - 30px)";
+    nameSpan.style.overflow = "hidden";
+    nameSpan.style.textOverflow = "ellipsis";
+    cursorTestDiv.appendChild(nameSpan);
+
+    // Create trash bin icon
+    const trashIcon = document.createElement("span");
+    trashIcon.innerHTML = "🗑️";
+    trashIcon.className = "trash-icon";
+    trashIcon.style.position = "absolute";
+    trashIcon.style.right = "5px";
+    trashIcon.style.top = "50%";
+    trashIcon.style.transform = "translateY(-50%)";
+    trashIcon.style.cursor = "pointer";
+    trashIcon.style.fontSize = "16px";
+    trashIcon.style.opacity = "0.6";
+    trashIcon.style.transition = "opacity 0.2s";
+    trashIcon.title = "Delete cursor";
+
+    trashIcon.addEventListener("mouseover", function() {
+      trashIcon.style.opacity = "1";
+    });
+
+    trashIcon.addEventListener("mouseout", function() {
+      trashIcon.style.opacity = "0.6";
+    });
+
+    trashIcon.addEventListener("click", function(e) {
+      e.stopPropagation(); // Prevent selecting the cursor
+      deleteCursor(name);
+    });
+
+    cursorTestDiv.appendChild(trashIcon);
 
     cursorTestDiv.addEventListener("click", function() {
       selectCursorForShapes(name, cursor.hotspot.x, cursor.hotspot.y);
@@ -129,7 +167,61 @@ function selectCursorForShapes(cursorName, hotspotX, hotspotY) {
     }
   });
 
+  // Also apply this cursor to the test area
+  if (cursorLibrary.has(cursorName)) {
+    const cursor = cursorLibrary.get(cursorName);
+    customCursorTestArea.style.cursor = `url('${cursor.url}') ${cursor.hotspot.x} ${cursor.hotspot.y}, auto`;
+    lastUploadedCursor = cursorName;
+    currentCursorURL = cursor.originalUrl || cursor.url;
+    hotspotXInput.value = cursor.hotspot.x;
+    hotspotYInput.value = cursor.hotspot.y;
+  } else if (cursorFileMap[cursorName]) {
+    customCursorTestArea.style.cursor = `url('${cursorFileMap[cursorName]}') ${hotspotX} ${hotspotY}, auto`;
+    lastUploadedCursor = null;
+    currentCursorURL = cursorFileMap[cursorName];
+    hotspotXInput.value = hotspotX;
+    hotspotYInput.value = hotspotY;
+  } else {
+    // Standard cursor
+    customCursorTestArea.style.cursor = cursorName;
+    lastUploadedCursor = null;
+    currentCursorURL = null;
+    hotspotXInput.value = hotspotX;
+    hotspotYInput.value = hotspotY;
+  }
+
   updateSelectedCursorDisplay();
+}
+
+// Function to delete a cursor from the library
+function deleteCursor(cursorName) {
+  if (!cursorLibrary.has(cursorName)) return;
+
+  // Confirm deletion
+  if (!confirm(`Delete cursor "${cursorName}"?`)) return;
+
+  // Remove from library
+  cursorLibrary.delete(cursorName);
+
+  // Clear selection if this was the selected cursor
+  if (selectedCursorForShapes === cursorName) {
+    selectedCursorForShapes = null;
+    selectedCursorHotspot = { x: 0, y: 0 };
+    updateSelectedCursorDisplay();
+  }
+
+  // Clear test area cursor if this was the active cursor
+  if (lastUploadedCursor === cursorName) {
+    lastUploadedCursor = null;
+    currentCursorURL = null;
+    customCursorTestArea.style.cursor = "default";
+    hotspotXInput.value = 0;
+    hotspotYInput.value = 0;
+  }
+
+  // Save and update display
+  saveCursorsToStorage();
+  updateCursorTestArea();
 }
 
 // Update the display showing which cursor is selected
@@ -179,6 +271,40 @@ const cursorUploadInput = document.getElementById("cursorUpload");
 const hotspotXInput = document.getElementById("hotspotX");
 const hotspotYInput = document.getElementById("hotspotY");
 
+// Add red dot to cursor image at hotspot position
+function addHotspotToCursor(imageDataURL, hotspotX, hotspotY) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      // Create canvas to draw cursor with hotspot indicator
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+
+      // Draw original cursor image
+      ctx.drawImage(img, 0, 0);
+
+      // Draw a red crosshair (1 pixel thick, 10 pixels long)
+      ctx.fillStyle = "#ff0000";
+
+      // Horizontal line (10 pixels wide, 1 pixel tall)
+      ctx.fillRect(hotspotX - 5, hotspotY, 10, 1);
+
+      // Vertical line (1 pixel wide, 10 pixels tall)
+      ctx.fillRect(hotspotX, hotspotY - 5, 1, 10);
+
+      // Convert back to data URL
+      resolve(canvas.toDataURL());
+    };
+    img.onerror = () => {
+      // If image fails to load, return original
+      resolve(imageDataURL);
+    };
+    img.src = imageDataURL;
+  });
+}
+
 // Store current cursor URL for re-applying with different hotspots
 let currentCursorURL = null;
 
@@ -195,26 +321,89 @@ function generateCursorName(filename) {
   return `${safeName}_${cursorCounter}`;
 }
 
+// Parse hotspot from SVG fritzing attributes
+function parseSVGHotspot(svgText) {
+  try {
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+    const svgElement = svgDoc.querySelector("svg");
+
+    if (svgElement) {
+      const hotspotX = svgElement.getAttributeNS("https://fritzing.org/svg/1.0", "hotspot-x");
+      const hotspotY = svgElement.getAttributeNS("https://fritzing.org/svg/1.0", "hotspot-y");
+
+      if (hotspotX !== null && hotspotY !== null) {
+        return {
+          x: parseInt(hotspotX) || 0,
+          y: parseInt(hotspotY) || 0
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Error parsing SVG hotspot:", error);
+  }
+  return null;
+}
+
 // Handle file upload for custom cursor
-cursorUploadInput.addEventListener("change", (event) => {
+cursorUploadInput.addEventListener("change", async (event) => {
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const dataURL = e.target.result;
       const cursorName = generateCursorName(file.name);
-      const hotspotX = parseInt(hotspotXInput.value) || 0;
-      const hotspotY = parseInt(hotspotYInput.value) || 0;
-      cursorLibrary.set(cursorName, {
-        url: dataURL,
-        filename: file.name,
-        hotspot: { x: hotspotX, y: hotspotY }
-      });
-      lastUploadedCursor = cursorName;
-      currentCursorURL = dataURL;
-      applyCustomCursor(dataURL);
-      updateCursorTestArea();
-      saveCursorsToStorage();
+      let hotspotX = parseInt(hotspotXInput.value) || 0;
+      let hotspotY = parseInt(hotspotYInput.value) || 0;
+
+      // If SVG file, try to parse hotspot from fritzing attributes
+      if (file.type === "image/svg+xml" || file.name.endsWith(".svg")) {
+        const textReader = new FileReader();
+        textReader.onload = async (textEvent) => {
+          const svgText = textEvent.target.result;
+          const parsedHotspot = parseSVGHotspot(svgText);
+
+          if (parsedHotspot) {
+            hotspotX = parsedHotspot.x;
+            hotspotY = parsedHotspot.y;
+            // Update input fields to show parsed hotspot
+            hotspotXInput.value = hotspotX;
+            hotspotYInput.value = hotspotY;
+          }
+
+          // Add red dot to cursor at hotspot position
+          const cursorWithHotspot = await addHotspotToCursor(dataURL, hotspotX, hotspotY);
+
+          cursorLibrary.set(cursorName, {
+            url: cursorWithHotspot,
+            originalUrl: dataURL, // Keep original for regenerating with different hotspot
+            filename: file.name,
+            hotspot: { x: hotspotX, y: hotspotY }
+          });
+          lastUploadedCursor = cursorName;
+          currentCursorURL = dataURL;
+          applyCustomCursor(cursorWithHotspot);
+          updateCursorTestArea();
+          saveCursorsToStorage();
+        };
+        textReader.readAsText(file);
+      } else {
+        // Non-SVG file, use current hotspot values
+        // Add red dot to cursor at hotspot position
+        const cursorWithHotspot = await addHotspotToCursor(dataURL, hotspotX, hotspotY);
+
+        cursorLibrary.set(cursorName, {
+          url: cursorWithHotspot,
+          originalUrl: dataURL, // Keep original for regenerating with different hotspot
+          filename: file.name,
+          hotspot: { x: hotspotX, y: hotspotY }
+        });
+        lastUploadedCursor = cursorName;
+        currentCursorURL = dataURL;
+        applyCustomCursor(cursorWithHotspot);
+        updateCursorTestArea();
+        saveCursorsToStorage();
+      }
     };
     reader.readAsDataURL(file);
   }
@@ -228,19 +417,23 @@ function applyCustomCursor(url) {
 }
 
 // Apply current cursor with updated hotspot values
-function applyCurrentCursor() {
-  if (currentCursorURL) {
-    applyCustomCursor(currentCursorURL);
+async function applyCurrentCursor() {
+  if (currentCursorURL && lastUploadedCursor && cursorLibrary.has(lastUploadedCursor)) {
+    const cursor = cursorLibrary.get(lastUploadedCursor);
+    const hotspotX = parseInt(hotspotXInput.value) || 0;
+    const hotspotY = parseInt(hotspotYInput.value) || 0;
 
-    // Update hotspot in cursorLibrary for the last uploaded cursor
-    if (lastUploadedCursor && cursorLibrary.has(lastUploadedCursor)) {
-      const cursor = cursorLibrary.get(lastUploadedCursor);
-      const hotspotX = parseInt(hotspotXInput.value) || 0;
-      const hotspotY = parseInt(hotspotYInput.value) || 0;
-      cursor.hotspot = { x: hotspotX, y: hotspotY };
-      cursorLibrary.set(lastUploadedCursor, cursor);
-      saveCursorsToStorage();
-    }
+    // Regenerate cursor with new hotspot
+    const cursorWithHotspot = await addHotspotToCursor(cursor.originalUrl || currentCursorURL, hotspotX, hotspotY);
+
+    // Update cursor in library
+    cursor.url = cursorWithHotspot;
+    cursor.hotspot = { x: hotspotX, y: hotspotY };
+    cursorLibrary.set(lastUploadedCursor, cursor);
+
+    applyCustomCursor(cursorWithHotspot);
+    updateCursorTestArea();
+    saveCursorsToStorage();
   }
 }
 
@@ -385,7 +578,6 @@ function loadShapesFromStorage() {
   }
 }
 
-// Render preview canvas
 function renderPreview() {
   if (!previewCanvas || !previewImage) return;
 
